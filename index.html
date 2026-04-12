@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareerReady AI — ATS-Optimized CV Builder</title>
+  <meta name="description" content="Upload your CV, get ATS score analysis, improve it with AI, find matching jobs, and download your optimized resume." />
+  <meta property="og:title" content="CareerReady AI" />
+  <meta property="og:description" content="AI-powered CV analyzer and optimizer. Score, improve, and download your ATS-ready resume." />
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&f[]=inter@400,500,600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────── */
+    :root {
+      --accent:       #00c9a7;
+      --accent-dim:   #00c9a720;
+      --accent-hover: #00b396;
+
+      --bg:           #ffffff;
+      --bg-2:         #f8f9fa;
+      --bg-3:         #f1f3f5;
+      --surface:      #ffffff;
+      --surface-2:    #f8f9fa;
+      --border:       rgba(0,0,0,0.08);
+      --border-focus: rgba(0,201,167,0.5);
+
+      --text-primary:   #0d1117;
+      --text-secondary: #5c6370;
+      --text-muted:     #9ca3af;
+      --text-on-accent: #ffffff;
+
+      --sidebar-w:    240px;
+      --topbar-h:     56px;
+      --radius:       8px;
+      --radius-lg:    12px;
+      --radius-xl:    16px;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-lg:    0 12px 32px rgba(0,0,0,0.1);
+
+      --easing:       cubic-bezier(0.4, 0, 0.2, 1);
+      --duration:     180ms;
+
+      --font-display: 'Satoshi', 'Inter', sans-serif;
+      --font-body:    'Inter', 'Satoshi', sans-serif;
+
+      --space-1: 4px;  --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+      --space-5: 20px; --space-6: 24px;  --space-8: 32px;  --space-10: 40px;
+      --space-12: 48px;--space-16: 64px; --space-20: 80px; --space-32: 128px;
+
+      --text-xs:   clamp(11px, 0.75rem, 12px);
+      --text-sm:   clamp(12px, 0.875rem, 14px);
+      --text-base: clamp(14px, 1rem, 16px);
+      --text-lg:   clamp(16px, 1.125rem, 18px);
+      --text-xl:   clamp(18px, 1.25rem, 20px);
+      --text-2xl:  clamp(20px, 1.5rem, 24px);
+      --text-3xl:  clamp(24px, 2rem, 32px);
+
+      --red:    #ef4444;
+      --amber:  #f59e0b;
+      --green:  #10b981;
+      --blue:   #3b82f6;
+    }
+
+    [data-theme="dark"] {
+      --bg:           #0d1117;
+      --bg-2:         #161b22;
+      --bg-3:         #1c2128;
+      --surface:      #161b22;
+      --surface-2:    #1c2128;
+      --border:       rgba(255,255,255,0.07);
+      --border-focus: rgba(0,201,167,0.4);
+
+      --text-primary:   #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted:     #484f58;
+      --text-on-accent: #0d1117;
+    }
+
+    /* ─── RESET & BASE ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      transition: background var(--duration) var(--easing), color var(--duration) var(--easing);
+      min-height: 100vh;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    input, textarea { font-family: inherit; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+    h1, h2, h3, h4, h5 { font-family: var(--font-display); font-weight: 700; line-height: 1.25; color: var(--text-primary); }
+
+    /* ─── LAYOUT ────────────────────────────────────────────────────── */
+    #app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* SIDEBAR */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: transform var(--duration) var(--easing), background var(--duration) var(--easing);
+      z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border);
+      height: var(--topbar-h);
+      text-decoration: none;
+    }
+    .sidebar-logo-text {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: var(--text-base);
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-nav {
+      flex: 1;
+      padding: var(--space-3) var(--space-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      transition: background var(--duration) var(--easing), color var(--duration) var(--easing);
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      min-height: 36px;
+    }
+    .nav-item:hover { background: var(--bg-3); color: var(--text-primary); }
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: var(--text-on-accent);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 999px;
+      line-height: 1.4;
+    }
+    .sidebar-footer {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border);
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+    }
+
+    /* MAIN AREA */
+    #main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* TOP BAR */
+    #topbar {
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--space-6);
+      gap: var(--space-3);
+      flex-shrink: 0;
+      transition: background var(--duration) var(--easing);
+    }
+    #topbar-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: var(--text-base);
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .topbar-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--duration) var(--easing), color var(--duration) var(--easing);
+      flex-shrink: 0;
+    }
+    .topbar-btn:hover { background: var(--bg-3); color: var(--text-primary); }
+    .topbar-btn svg { width: 16px; height: 16px; }
+    #mobile-menu-btn { display: none; }
+
+    /* PAGE CONTENT */
+    #page-content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+      transition: background var(--duration) var(--easing);
+    }
+
+    .page-section {
+      display: none;
+      padding: var(--space-8) var(--space-8);
+      max-width: 1000px;
+    }
+    .page-section.active { display: block; }
+
+    .section-header { margin-bottom: var(--space-8); }
+    .section-header h1 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+      letter-spacing: -0.02em;
+    }
+    .section-header p { color: var(--text-secondary); font-size: var(--text-sm); max-width: 520px; }
+
+    /* ─── CARDS ─────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: background var(--duration) var(--easing), border-color var(--duration) var(--easing);
+      box-shadow: var(--shadow-sm);
+    }
+    .card-title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-3);
+      font-family: var(--font-display);
+    }
+
+    /* ─── BUTTONS ────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all var(--duration) var(--easing);
+      min-height: 36px;
+      border: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--text-on-accent);
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,201,167,0.25); }
+    .btn-secondary {
+      background: var(--bg-3);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--bg-2); border-color: rgba(0,0,0,0.15); }
+    [data-theme="dark"] .btn-secondary:hover { border-color: rgba(255,255,255,0.12); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+    }
+    .btn-ghost:hover { background: var(--bg-3); color: var(--text-primary); }
+    .btn-danger {
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.15); }
+    .btn-lg { padding: var(--space-3) var(--space-6); font-size: var(--text-base); min-height: 44px; }
+    .btn-sm { padding: var(--space-1) var(--space-3); font-size: var(--text-xs); min-height: 30px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* ─── MODALS ─────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: var(--space-4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration) var(--easing);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      width: 100%;
+      max-width: 460px;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95) translateY(8px);
+      transition: transform var(--duration) var(--easing);
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+      letter-spacing: -0.02em;
+    }
+    .modal-desc { color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-6); line-height: 1.5; }
+    .modal-close {
+      position: absolute;
+      top: var(--space-4);
+      right: var(--space-4);
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      transition: background var(--duration) var(--easing);
+    }
+    .modal-close:hover { background: var(--bg-3); color: var(--text-primary); }
+
+    /* ─── FORM ELEMENTS ──────────────────────────────────────────────── */
+    .form-group { margin-bottom: var(--space-4); }
+    .form-label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    .input-wrap { position: relative; }
+    .form-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      color: var(--text-primary);
+      transition: border-color var(--duration) var(--easing), background var(--duration) var(--easing);
+      min-height: 40px;
+    }
+    .form-input:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .form-input::placeholder { color: var(--text-muted); }
+    .input-icon-right {
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      min-width: 44px;
+      justify-content: center;
+    }
+    .input-icon-right:hover { color: var(--text-primary); }
+    .input-icon-right svg { width: 15px; height: 15px; }
+    .form-input.has-icon-right { padding-right: 40px; }
+
+    /* ─── TRUST NOTE ──────────────────────────────────────────────────── */
+    .trust-note {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      margin-top: var(--space-3);
+    }
+    .trust-note svg { width: 13px; height: 13px; color: var(--green); flex-shrink: 0; }
+
+    /* ─── API KEY MODAL ───────────────────────────────────────────────── */
+    #api-modal .modal { position: relative; }
+    .api-logo { margin-bottom: var(--space-5); }
+
+    /* ─── UPLOAD SECTION ─────────────────────────────────────────────── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-12) var(--space-8);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--duration) var(--easing), background var(--duration) var(--easing);
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .dropzone-icon {
+      width: 52px; height: 52px;
+      background: var(--bg-3);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-4);
+      color: var(--accent);
+    }
+    .dropzone-icon svg { width: 24px; height: 24px; }
+    .dropzone-title {
+      font-family: var(--font-display);
+      font-size: var(--text-base);
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+    }
+    .dropzone-sub { color: var(--text-secondary); font-size: var(--text-sm); }
+    .dropzone-formats { 
+      margin-top: var(--space-4);
+      display: flex;
+      justify-content: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .format-badge {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2px var(--space-2);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    /* FILE INFO */
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      margin-top: var(--space-4);
+    }
+    .file-icon {
+      width: 40px; height: 40px;
+      background: rgba(0,201,167,0.1);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .file-icon svg { width: 20px; height: 20px; }
+    .file-details { flex: 1; min-width: 0; }
+    .file-name {
+      font-weight: 600;
+      font-size: var(--text-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-meta { font-size: var(--text-xs); color: var(--text-muted); }
+    .file-check { color: var(--green); }
+    .file-check svg { width: 20px; height: 20px; }
+
+    /* RAW TEXT PREVIEW */
+    .collapsible-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      padding: var(--space-3) 0;
+      width: 100%;
+      text-align: left;
+    }
+    .collapsible-toggle:hover { color: var(--text-primary); }
+    .collapsible-toggle svg { width: 15px; height: 15px; transition: transform var(--duration) var(--easing); }
+    .collapsible-toggle.open svg { transform: rotate(90deg); }
+    .raw-text-preview {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      font-family: 'Courier New', monospace;
+      font-size: var(--text-xs);
+      line-height: 1.6;
+      color: var(--text-secondary);
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: none;
+    }
+    .raw-text-preview.open { display: block; }
+
+    /* ─── ANALYSIS SECTION ───────────────────────────────────────────── */
+    .score-ring-wrap {
+      display: flex;
+      align-items: center;
+      gap: var(--space-8);
+      margin-bottom: var(--space-8);
+      flex-wrap: wrap;
+    }
+    .score-ring-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      flex-shrink: 0;
+    }
+    .score-ring-container svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+    .score-ring-bg {
+      fill: none;
+      stroke: var(--bg-3);
+      stroke-width: 10;
+    }
+    .score-ring-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s var(--easing);
+    }
+    .score-ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .score-number {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .score-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; }
+    .score-summary { flex: 1; min-width: 240px; }
+    .score-summary h2 {
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-3);
+      letter-spacing: -0.02em;
+    }
+    .score-summary p { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
+    .exp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,201,167,0.2);
+      border-radius: 999px;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      padding: 3px 10px;
+      margin-top: var(--space-3);
+    }
+
+    /* STRENGTH / WEAKNESS CARDS */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    @media (max-width: 700px) { .analysis-grid { grid-template-columns: 1fr; } }
+
+    .strength-card {
+      background: var(--surface);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+    .strength-card-header { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-2); }
+    .strength-icon {
+      width: 28px; height: 28px;
+      background: rgba(16,185,129,0.1);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+    .strength-icon svg { width: 14px; height: 14px; }
+    .strength-title { font-size: var(--text-sm); font-weight: 600; }
+    .strength-desc { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; padding-left: calc(28px + var(--space-3)); }
+
+    .weakness-card {
+      background: var(--surface);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+    .weakness-header { display: flex; align-items: flex-start; gap: var(--space-3); }
+    .weakness-icon {
+      width: 28px; height: 28px;
+      background: rgba(245,158,11,0.1);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--amber);
+      flex-shrink: 0;
+    }
+    .weakness-icon svg { width: 14px; height: 14px; }
+    .weakness-info { flex: 1; }
+    .weakness-title { font-size: var(--text-sm); font-weight: 600; margin-bottom: 2px; }
+    .weakness-desc { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; }
+    .weakness-accordion {
+      margin-top: var(--space-3);
+      border-top: 1px solid var(--border);
+      padding-top: var(--space-3);
+    }
+    .accordion-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: none;
+      border: none;
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 0;
+    }
+    .accordion-toggle svg { width: 12px; height: 12px; transition: transform var(--duration) var(--easing); }
+    .accordion-toggle.open svg { transform: rotate(90deg); }
+    .accordion-content {
+      display: none;
+      margin-top: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      background: rgba(245,158,11,0.05);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+    }
+    .accordion-content.open { display: block; }
+
+    /* PILL TAGS */
+    .pill-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .pill {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,201,167,0.2);
+      border-radius: 999px;
+      font-size: var(--text-xs);
+      font-weight: 500;
+      padding: 3px var(--space-3);
+      cursor: default;
+    }
+    .pill.clickable { cursor: pointer; }
+    .pill.clickable:hover { background: var(--accent); color: var(--text-on-accent); }
+    .pill-red { background: rgba(239,68,68,0.08); color: var(--red); border-color: rgba(239,68,68,0.15); }
+
+    /* JOB TITLE CLICKABLE */
+    .job-title-pill {
+      background: var(--bg-3);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: var(--text-xs);
+      font-weight: 500;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all var(--duration) var(--easing);
+    }
+    .job-title-pill:hover { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
+
+    /* ─── SKELETON LOADERS ───────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-3) 25%, var(--bg-2) 50%, var(--bg-3) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-text { height: 14px; margin-bottom: var(--space-2); }
+    .skeleton-title { height: 20px; width: 60%; margin-bottom: var(--space-3); }
+    .skeleton-circle { border-radius: 50%; }
+    .skeleton-card { height: 80px; border-radius: var(--radius-lg); }
+
+    /* ─── IMPROVE SECTION ────────────────────────────────────────────── */
+    .split-view {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    @media (max-width: 760px) { .split-view { grid-template-columns: 1fr; } }
+
+    .split-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .split-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-2);
+    }
+    .split-panel-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .split-panel-meta { font-size: var(--text-xs); color: var(--text-muted); }
+    .split-textarea {
+      width: 100%;
+      min-height: 400px;
+      resize: vertical;
+      padding: var(--space-4);
+      background: var(--surface);
+      border: none;
+      font-size: var(--text-xs);
+      font-family: 'Courier New', monospace;
+      line-height: 1.7;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .diff-line-added { background: rgba(0,201,167,0.08); color: var(--accent); }
+
+    /* ─── JOBS SECTION ───────────────────────────────────────────────── */
+    .search-bar {
+      display: flex;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+    .search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-input-wrap svg { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted); pointer-events: none; }
+    .search-bar .form-input { padding-left: 36px; }
+
+    .platform-filters { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); flex-wrap: wrap; }
+    .filter-btn {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      transition: all var(--duration) var(--easing);
+    }
+    .filter-btn:hover { background: var(--bg-3); color: var(--text-primary); }
+    .filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,201,167,0.3); }
+
+    .job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-3);
+      transition: border-color var(--duration) var(--easing), box-shadow var(--duration) var(--easing);
+    }
+    .job-card:hover { border-color: rgba(0,201,167,0.3); box-shadow: var(--shadow-md); }
+    .job-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
+    .job-logo {
+      width: 40px; height: 40px;
+      background: var(--bg-3);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .job-info { flex: 1; }
+    .job-title { font-size: var(--text-base); font-weight: 600; margin-bottom: 2px; }
+    .job-company { font-size: var(--text-sm); color: var(--text-secondary); }
+    .match-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,201,167,0.2);
+      border-radius: 999px;
+      font-size: var(--text-xs);
+      font-weight: 700;
+      padding: 3px 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .match-badge.low { background: rgba(239,68,68,0.08); color: var(--red); border-color: rgba(239,68,68,0.15); }
+    .match-badge.mid { background: rgba(245,158,11,0.1); color: var(--amber); border-color: rgba(245,158,11,0.2); }
+    .job-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: var(--space-4);
+    }
+    .job-meta-item { display: flex; align-items: center; gap: var(--space-1); }
+    .job-meta-item svg { width: 12px; height: 12px; }
+    .job-actions { display: flex; gap: var(--space-2); }
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-top: var(--space-6);
+    }
+    .page-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: all var(--duration) var(--easing);
+    }
+    .page-btn:hover { background: var(--bg-3); color: var(--text-primary); }
+    .page-btn.active { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── DOWNLOAD SECTION ───────────────────────────────────────────── */
+    .template-selector { display: flex; gap: var(--space-3); margin-bottom: var(--space-6); flex-wrap: wrap; }
+    .template-card {
+      flex: 1;
+      min-width: 120px;
+      max-width: 180px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--duration) var(--easing);
+    }
+    .template-card:hover { border-color: var(--accent); }
+    .template-card.active { border-color: var(--accent); background: var(--accent-dim); }
+    .template-thumb {
+      width: 100%;
+      height: 80px;
+      background: var(--bg-3);
+      border-radius: var(--radius);
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .template-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); }
+
+    .cv-preview {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: var(--radius-lg);
+      padding: var(--space-10);
+      min-height: 500px;
+      font-family: 'Inter', sans-serif;
+      color: #1a1a1a;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: var(--space-6);
+      box-shadow: var(--shadow-md);
+      max-width: 760px;
+    }
+    .cv-preview h1 { font-size: 22px; font-weight: 700; color: #0d1117; margin-bottom: 4px; }
+    .cv-preview h2 { font-size: 13px; font-weight: 700; color: #00c9a7; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 20px; margin-bottom: 8px; }
+    .cv-preview.modern h2 { color: #3b82f6; border-color: #3b82f6; }
+    .cv-preview.minimal h2 { color: #1a1a1a; border-color: #1a1a1a; font-weight: 900; }
+    .cv-preview p, .cv-preview li { font-size: 13px; color: #374151; margin-bottom: 4px; }
+    .cv-preview ul { padding-left: 18px; }
+
+    .download-actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-6);
+    }
+
+    /* ─── EMPTY STATES ───────────────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: var(--space-16) var(--space-8);
+      min-height: 300px;
+    }
+    .empty-state-icon {
+      width: 64px; height: 64px;
+      background: var(--bg-3);
+      border-radius: var(--radius-xl);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: var(--space-5);
+      color: var(--text-muted);
+    }
+    .empty-state-icon svg { width: 28px; height: 28px; }
+    .empty-state h2 { font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-2); }
+    .empty-state p { color: var(--text-secondary); font-size: var(--text-sm); max-width: 320px; margin-bottom: var(--space-5); line-height: 1.5; }
+
+    /* ─── ERROR & STATUS CARDS ───────────────────────────────────────── */
+    .status-card {
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+    .status-card svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+    .status-card-content { flex: 1; }
+    .status-card-title { font-size: var(--text-sm); font-weight: 600; margin-bottom: 2px; }
+    .status-card-msg { font-size: var(--text-xs); line-height: 1.5; }
+    .status-error { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); color: var(--red); }
+    .status-error .status-card-msg { color: var(--text-secondary); }
+    .status-warning { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.15); color: var(--amber); }
+    .status-success { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.15); color: var(--green); }
+    .status-info { background: var(--accent-dim); border: 1px solid rgba(0,201,167,0.15); color: var(--accent); }
+
+    /* ─── SECTION DIVIDERS ───────────────────────────────────────────── */
+    .section-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: var(--space-3);
+    }
+
+    /* ─── LOADING SPINNER ────────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      text-align: center;
+    }
+    .loading-card .spinner { margin: 0 auto var(--space-4); width: 32px; height: 32px; border-width: 3px; }
+    .loading-card p { color: var(--text-secondary); font-size: var(--text-sm); }
+    .loading-card strong { display: block; font-size: var(--text-base); margin-bottom: var(--space-2); }
+
+    /* ─── MODEL SELECTOR ─────────────────────────────────────────────── */
+    .model-selector-wrap { position: relative; display: inline-flex; align-items: center; }
+    .model-select {
+      appearance: none;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: var(--text-xs);
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      padding: 4px var(--space-6) 4px var(--space-3);
+      cursor: pointer;
+      height: 30px;
+    }
+    .model-selector-wrap svg { position: absolute; right: var(--space-2); pointer-events: none; width: 12px; height: 12px; color: var(--text-muted); }
+
+    /* ─── APPLY MODAL ────────────────────────────────────────────────── */
+    #apply-modal .modal { max-width: 480px; }
+
+    /* ─── MOBILE ─────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 100%; }
+      #app { flex-direction: column; }
+      #sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        transform: translateX(-100%);
+        width: 260px;
+        z-index: 200;
+      }
+      #sidebar.open { transform: translateX(0); }
+      #mobile-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 150;
+      }
+      #mobile-overlay.open { display: block; }
+      #mobile-menu-btn { display: flex; }
+      #main-area { width: 100%; }
+      .page-section { padding: var(--space-5) var(--space-4); }
+      .score-ring-wrap { flex-direction: column; }
+    }
+
+    /* ─── SCROLLBAR ──────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────── */
+    .section-footer {
+      margin-top: var(--space-8);
+      padding-top: var(--space-5);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+    .section-footer p { font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* ─── JOBS KEY REMINDER ──────────────────────────────────────────── */
+    #rapidapi-note { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- MOBILE OVERLAY -->
+<div id="mobile-overlay" role="presentation" aria-hidden="true"></div>
+
+<!-- API KEY MODAL -->
+<div id="api-modal" class="modal-overlay open" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
+  <div class="modal">
+    <div class="api-logo">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-label="CareerReady AI logo">
+        <rect width="36" height="36" rx="9" fill="#00c9a7" opacity="0.12"/>
+        <path d="M10 18 L16 12 L22 18 L16 24Z" stroke="#00c9a7" stroke-width="2" fill="none" stroke-linejoin="round"/>
+        <path d="M20 15 L26 9" stroke="#00c9a7" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="27" cy="8" r="2" fill="#00c9a7"/>
+      </svg>
+    </div>
+    <h2 class="modal-title" id="api-modal-title">Welcome to CareerReady AI</h2>
+    <p class="modal-desc">Enter your OpenAI API key to get started. Your key is stored only in memory and never leaves your browser.</p>
+    <div class="form-group">
+      <label class="form-label" for="api-key-input">OpenAI API Key</label>
+      <div class="input-wrap">
+        <input id="api-key-input" type="password" class="form-input has-icon-right" placeholder="sk-proj-..." autocomplete="off" spellcheck="false" aria-describedby="api-key-hint" />
+        <button class="input-icon-right" id="toggle-key-visibility" aria-label="Toggle key visibility">
+          <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="model-select-modal">AI Model</label>
+      <select id="model-select-modal" class="form-input">
+        <option value="gpt-4o">GPT-4o (Recommended — fastest, smartest)</option>
+        <option value="gpt-4o-mini">GPT-4o Mini (Faster, cheaper)</option>
+        <option value="gpt-4-turbo">GPT-4 Turbo (High quality, slower)</option>
+        <option value="gpt-4.1">GPT-4.1 (Latest generation)</option>
+        <option value="o3-mini">o3-mini (Reasoning model)</option>
+        <option value="o1-mini">o1-mini (Advanced reasoning)</option>
+      </select>
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;">Model list updates automatically if your account has access to newer models.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="rapidapi-key-input">RapidAPI Key <span style="color:var(--text-muted);font-weight:400;">(optional — for live job search)</span></label>
+      <input id="rapidapi-key-input" type="password" class="form-input" placeholder="Leave blank to use demo job data" autocomplete="off" />
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;">Get a free key at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener noreferrer">RapidAPI JSearch</a> for live LinkedIn/Indeed results.</p>
+    </div>
+
+    <div style="display:flex;gap:var(--space-3);margin-top:var(--space-2);">
+      <button id="save-api-key-btn" class="btn btn-primary btn-lg" style="flex:1;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Save & Continue
+      </button>
+      <button id="skip-api-key-btn" class="btn btn-ghost btn-lg" aria-label="Skip API key setup">Skip</button>
+    </div>
+
+    <div class="trust-note">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Your API key never leaves your browser — stored in memory only
+    </div>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div id="apply-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="apply-modal-title">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" id="apply-modal-close" aria-label="Close modal">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 class="modal-title" id="apply-modal-title">Apply for This Role</h2>
+    <p class="modal-desc">Follow these steps to apply with your optimized CV:</p>
+    <ol style="padding-left:20px;font-size:var(--text-sm);color:var(--text-secondary);line-height:2;">
+      <li>Download your optimized CV from the <strong style="color:var(--text-primary)">Download</strong> section</li>
+      <li>Open the job listing on the platform</li>
+      <li>Click "Apply" and upload your downloaded CV</li>
+    </ol>
+    <div id="apply-job-link" style="margin-top:var(--space-5);"></div>
+    <div style="margin-top:var(--space-5);display:flex;gap:var(--space-3);">
+      <a id="apply-modal-job-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="flex:1;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Open Job Listing
+      </a>
+      <button class="btn btn-secondary" id="apply-to-download-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CV
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar" aria-label="Main navigation">
+    <a href="#upload" class="sidebar-logo" aria-label="CareerReady AI home">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect width="28" height="28" rx="7" fill="#00c9a7" opacity="0.15"/>
+        <path d="M8 14 L13 9 L18 14 L13 19Z" stroke="#00c9a7" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+        <path d="M16 11 L21 6" stroke="#00c9a7" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="21.5" cy="5.5" r="1.8" fill="#00c9a7"/>
+      </svg>
+      <span class="sidebar-logo-text">Career<span>Ready</span> AI</span>
+    </a>
+
+    <div class="sidebar-nav" role="list">
+      <button class="nav-item active" data-section="upload" role="listitem" aria-current="page">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload CV
+      </button>
+      <button class="nav-item" data-section="analysis" role="listitem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        ATS Analysis
+        <span id="nav-score-badge" class="nav-badge" style="display:none">-</span>
+      </button>
+      <button class="nav-item" data-section="improve" role="listitem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Improve CV
+      </button>
+      <button class="nav-item" data-section="jobs" role="listitem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Job Matches
+      </button>
+      <button class="nav-item" data-section="download" role="listitem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CV
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <p>CareerReady AI v2.0</p>
+      <p style="margin-top:4px;">All processing is client-side.</p>
+    </div>
+  </nav>
+
+  <!-- MAIN AREA -->
+  <div id="main-area">
+    <!-- TOP BAR -->
+    <header id="topbar" role="banner">
+      <button id="mobile-menu-btn" class="topbar-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span id="topbar-title">Upload CV</span>
+      <div style="display:flex;align-items:center;gap:var(--space-2);">
+        <div class="model-selector-wrap" title="Active AI model">
+          <select id="model-select-topbar" class="model-select" aria-label="Select AI model">
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gpt-4o-mini">GPT-4o Mini</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+            <option value="o3-mini">o3-mini</option>
+            <option value="o1-mini">o1-mini</option>
+          </select>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <button id="theme-toggle" class="topbar-btn" aria-label="Toggle theme">
+          <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button id="settings-btn" class="topbar-btn" aria-label="Open settings / change API key">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main id="page-content" tabindex="-1">
+
+      <!-- ── SECTION: UPLOAD ── -->
+      <section id="section-upload" class="page-section active" aria-labelledby="upload-heading">
+        <div class="section-header">
+          <h1 id="upload-heading">Upload Your CV</h1>
+          <p>Upload your resume in PDF, DOCX, or TXT format to begin your AI-powered analysis.</p>
+        </div>
+
+        <div id="no-key-warning" class="status-card status-warning" style="display:none;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="status-card-content">
+            <div class="status-card-title">API key not set</div>
+            <div class="status-card-msg">You can upload a CV and preview the app, but AI features require an OpenAI API key. <button class="btn btn-sm" onclick="openApiModal()" style="margin-left:8px;background:var(--amber);color:#fff;border:none;">Add API Key</button></div>
+          </div>
+        </div>
+
+        <div class="dropzone" id="dropzone" role="region" aria-label="File upload area">
+          <input type="file" id="file-input" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" aria-label="Upload CV file" />
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="dropzone-title">Drop your CV here or click to browse</div>
+          <div class="dropzone-sub">Supports PDF, DOCX, and plain text files</div>
+          <div class="dropzone-formats">
+            <span class="format-badge">PDF</span>
+            <span class="format-badge">DOCX</span>
+            <span class="format-badge">TXT</span>
+          </div>
+        </div>
+
+        <div id="file-info" style="display:none;" aria-live="polite">
+          <div class="file-info">
+            <div class="file-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="file-details">
+              <div class="file-name" id="file-name-display"></div>
+              <div class="file-meta" id="file-meta-display"></div>
+            </div>
+            <div class="file-check" aria-label="File uploaded successfully">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+          </div>
+
+          <button class="collapsible-toggle" id="raw-preview-toggle" aria-expanded="false" aria-controls="raw-preview-content">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            Raw Text Preview
+          </button>
+          <div id="raw-preview-content" class="raw-text-preview" role="region" aria-label="Extracted text from CV"></div>
+
+          <div style="display:flex;gap:var(--space-3);margin-top:var(--space-5);flex-wrap:wrap;">
+            <button id="analyze-btn" class="btn btn-primary btn-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Analyze CV
+            </button>
+            <button id="clear-btn" class="btn btn-ghost">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Clear &amp; Re-upload
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SECTION: ANALYSIS ── -->
+      <section id="section-analysis" class="page-section" aria-labelledby="analysis-heading">
+        <div class="section-header">
+          <h1 id="analysis-heading">ATS Analysis</h1>
+          <p>AI-powered breakdown of your CV's ATS compatibility, strengths, weaknesses, and keyword gaps.</p>
+        </div>
+        <div id="analysis-content"></div>
+      </section>
+
+      <!-- ── SECTION: IMPROVE ── -->
+      <section id="section-improve" class="page-section" aria-labelledby="improve-heading">
+        <div class="section-header">
+          <h1 id="improve-heading">Improved CV Builder</h1>
+          <p>AI rewrites your CV to score 90+ on ATS systems with stronger language and missing keywords added.</p>
+        </div>
+        <div id="improve-content"></div>
+      </section>
+
+      <!-- ── SECTION: JOBS ── -->
+      <section id="section-jobs" class="page-section" aria-labelledby="jobs-heading">
+        <div class="section-header">
+          <h1 id="jobs-heading">Job Matches</h1>
+          <p>Discover relevant job listings based on your skills and target role.</p>
+        </div>
+        <div id="jobs-content"></div>
+      </section>
+
+      <!-- ── SECTION: DOWNLOAD ── -->
+      <section id="section-download" class="page-section" aria-labelledby="download-heading">
+        <div class="section-header">
+          <h1 id="download-heading">Download CV</h1>
+          <p>Preview and download your optimized CV as a formatted PDF, text file, or copy to clipboard.</p>
+        </div>
+        <div id="download-content"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- CDN SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+'use strict';
+
+// ─── STATE ────────────────────────────────────────────────────────
+let state = {
+  apiKey: '',
+  rapidApiKey: '',
+  model: 'gpt-4o',
+  cvText: '',
+  cvFileName: '',
+  analysis: null,
+  improvedCv: '',
+  currentSection: 'upload',
+  jobSearchQuery: '',
+  jobLocation: 'Remote',
+  jobPlatform: 'both',
+  jobPage: 1,
+  jobResults: [],
+  selectedTemplate: 'classic',
+  currentApplyJob: null
+};
+
+// ─── DOM REFS ─────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+
+// ─── PDF.JS CONFIG ────────────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────
+const sectionTitles = {
+  upload: 'Upload CV',
+  analysis: 'ATS Analysis',
+  improve: 'Improved CV Builder',
+  jobs: 'Job Matches',
+  download: 'Download CV'
+};
+
+function navigateTo(section) {
+  state.currentSection = section;
+  $$('.page-section').forEach(s => s.classList.remove('active'));
+  $$('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.removeAttribute('aria-current');
+  });
+  const el = $(`section-${section}`);
+  if (el) { el.classList.add('active'); el.focus && el.focus(); }
+  const nav = document.querySelector(`.nav-item[data-section="${section}"]`);
+  if (nav) { nav.classList.add('active'); nav.setAttribute('aria-current', 'page'); }
+  $('topbar-title').textContent = sectionTitles[section] || '';
+  window.location.hash = section;
+  closeMobileMenu();
+  // lazy-render sections
+  if (section === 'analysis') renderAnalysisSection();
+  if (section === 'improve') renderImproveSection();
+  if (section === 'jobs') renderJobsSection();
+  if (section === 'download') renderDownloadSection();
+}
+
+$$('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => navigateTo(btn.dataset.section));
+});
+
+// Hash routing
+function handleHash() {
+  const hash = window.location.hash.replace('#','') || 'upload';
+  const valid = ['upload','analysis','improve','jobs','download'];
+  if (valid.includes(hash)) navigateTo(hash);
+}
+window.addEventListener('hashchange', handleHash);
+
+// ─── MOBILE SIDEBAR ───────────────────────────────────────────────
+function openMobileMenu() {
+  $('sidebar').classList.add('open');
+  $('mobile-overlay').classList.add('open');
+  $('mobile-menu-btn').setAttribute('aria-expanded', 'true');
+}
+function closeMobileMenu() {
+  $('sidebar').classList.remove('open');
+  $('mobile-overlay').classList.remove('open');
+  $('mobile-menu-btn').setAttribute('aria-expanded', 'false');
+}
+$('mobile-menu-btn').addEventListener('click', openMobileMenu);
+$('mobile-overlay').addEventListener('click', closeMobileMenu);
+
+// ─── THEME ────────────────────────────────────────────────────────
+function setTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  $('sun-icon').style.display = dark ? 'block' : 'none';
+  $('moon-icon').style.display = dark ? 'none' : 'block';
+}
+$('theme-toggle').addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setTheme(!isDark);
+});
+// Detect system preference
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+setTheme(prefersDark);
+
+// ─── MODEL SYNC ───────────────────────────────────────────────────
+$('model-select-topbar').addEventListener('change', e => {
+  state.model = e.target.value;
+  $('model-select-modal').value = e.target.value;
+});
+$('model-select-modal').addEventListener('change', e => {
+  state.model = e.target.value;
+  $('model-select-topbar').value = e.target.value;
+});
+
+// ─── API KEY MODAL ────────────────────────────────────────────────
+function openApiModal() {
+  $('api-modal').classList.add('open');
+  $('api-key-input').value = state.apiKey || '';
+  $('rapidapi-key-input').value = state.rapidApiKey || '';
+  $('model-select-modal').value = state.model;
+  setTimeout(() => $('api-key-input').focus(), 100);
+}
+function closeApiModal() {
+  $('api-modal').classList.remove('open');
+}
+
+$('save-api-key-btn').addEventListener('click', () => {
+  const key = $('api-key-input').value.trim();
+  const rKey = $('rapidapi-key-input').value.trim();
+  const model = $('model-select-modal').value;
+  if (key && !key.startsWith('sk-') && !key.startsWith('sk_')) {
+    showToast('API key should start with sk-', 'warning');
+    return;
+  }
+  state.apiKey = key;
+  state.rapidApiKey = rKey;
+  state.model = model;
+  $('model-select-topbar').value = model;
+  closeApiModal();
+  setTimeout(checkApiKeyStatus, 50);
+  showToast(key ? 'API key saved successfully' : 'Continuing without API key', key ? 'success' : 'info');
+});
+
+$('skip-api-key-btn').addEventListener('click', () => {
+  closeApiModal();
+  setTimeout(checkApiKeyStatus, 50);
+});
+
+$('settings-btn').addEventListener('click', openApiModal);
+
+$('toggle-key-visibility').addEventListener('click', () => {
+  const inp = $('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+
+$('api-modal').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('api-modal').classList.contains('open')) { closeApiModal(); checkApiKeyStatus(); } }
+});
+$('api-key-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('save-api-key-btn').click(); });
+
+function checkApiKeyStatus() {
+  $('no-key-warning').style.display = state.apiKey ? 'none' : 'flex';
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  const colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#00c9a7' };
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-left:3px solid ${colors[type]||colors.info};border-radius:var(--radius-lg);padding:12px 16px;font-size:var(--text-sm);color:var(--text-primary);box-shadow:var(--shadow-lg);z-index:9999;max-width:320px;animation:slideInToast 0.2s var(--easing);`;
+  toast.textContent = msg;
+  const style = document.createElement('style');
+  style.textContent = '@keyframes slideInToast{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}';
+  document.head.appendChild(style);
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// ─── FILE UPLOAD ──────────────────────────────────────────────────
+const dropzone = $('dropzone');
+const fileInput = $('file-input');
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  const file = e.dataTransfer?.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+async function handleFile(file) {
+  const allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+  const allowedExt = ['.pdf', '.docx', '.txt'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!allowed.includes(file.type) && !allowedExt.includes(ext)) {
+    showToast('Please upload a PDF, DOCX, or TXT file', 'error');
+    return;
+  }
+  state.cvFileName = file.name;
+  $('file-name-display').textContent = file.name;
+  $('file-meta-display').textContent = `${(file.size / 1024).toFixed(1)} KB · ${ext.toUpperCase().replace('.','')}`; 
+  $('file-info').style.display = 'block';
+  dropzone.style.display = 'none';
+  const btn = $('analyze-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Extracting text...`;
+  try {
+    let text = '';
+    if (file.type === 'application/pdf' || ext === '.pdf') {
+      text = await extractPdfText(file);
+    } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || ext === '.docx') {
+      text = await extractDocxText(file);
+    } else {
+      text = await readTextFile(file);
+    }
+    state.cvText = text;
+    $('raw-preview-content').textContent = text;
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Analyze CV`;
+    showToast(`CV loaded: ${text.split(/\s+/).filter(Boolean).length} words extracted`, 'success');
+  } catch (err) {
+    showToast('Failed to extract text: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Analyze CV`;
+  }
+}
+
+async function extractPdfText(file) {
+  if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function extractDocxText(file) {
+  const buffer = await file.arrayBuffer();
+  const arr = new Uint8Array(buffer);
+  // Simple DOCX text extraction: find XML content between <w:t> tags
+  let str = '';
+  for (let i = 0; i < arr.length; i++) str += String.fromCharCode(arr[i]);
+  // Try to find readable text from the binary
+  // For DOCX: extract human-readable characters only
+  try {
+    // Try JSZip approach via CDN fallback
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const decoded = decoder.decode(buffer);
+    // Extract text between XML tags
+    const xmlMatches = decoded.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [];
+    if (xmlMatches.length > 0) {
+      return xmlMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ').replace(/\s+/g, ' ').trim();
+    }
+    // Fallback: extract printable ASCII
+    let text = '';
+    for (let i = 0; i < arr.length; i++) {
+      const c = arr[i];
+      if ((c >= 32 && c <= 126) || c === 10 || c === 13) {
+        text += String.fromCharCode(c);
+      }
+    }
+    const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 3 && /[a-zA-Z]/.test(l));
+    return [...new Set(lines)].join('\n').substring(0, 8000);
+  } catch {
+    throw new Error('Could not parse DOCX. Try saving as PDF or TXT.');
+  }
+}
+
+async function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
+// Collapsible raw preview
+$('raw-preview-toggle').addEventListener('click', () => {
+  const content = $('raw-preview-content');
+  const toggle = $('raw-preview-toggle');
+  const isOpen = content.classList.contains('open');
+  content.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+  toggle.setAttribute('aria-expanded', String(!isOpen));
+});
+
+// Clear button
+$('clear-btn').addEventListener('click', () => {
+  state.cvText = ''; state.cvFileName = ''; state.analysis = null; state.improvedCv = '';
+  $('file-info').style.display = 'none';
+  dropzone.style.display = 'block';
+  fileInput.value = '';
+  $('raw-preview-content').textContent = '';
+  $('raw-preview-content').classList.remove('open');
+  $('raw-preview-toggle').classList.remove('open');
+  $('nav-score-badge').style.display = 'none';
+  showToast('CV cleared', 'info');
+});
+
+// Analyze button
+$('analyze-btn').addEventListener('click', async () => {
+  if (!state.cvText) { showToast('No CV text found', 'error'); return; }
+  if (!state.apiKey) {
+    showToast('Please add your OpenAI API key first', 'warning');
+    openApiModal();
+    return;
+  }
+  navigateTo('analysis');
+  await runAnalysis();
+});
+
+// ─── AI: ANALYSIS ─────────────────────────────────────────────────
+async function runAnalysis() {
+  state.analysis = null;
+  renderAnalysisSection();
+  const prompt = `You are an expert ATS (Applicant Tracking System) analyst and career coach. Analyze the following CV and return ONLY a valid JSON object (no markdown, no code blocks) with this exact structure:
+{
+  "ats_score": <number 0-100>,
+  "summary": "<2-3 sentence overall assessment>",
+  "strengths": [{"title": "<title>", "description": "<desc>"}],
+  "weaknesses": [{"title": "<title>", "description": "<desc>", "fix": "<actionable fix>"}],
+  "missing_keywords": ["<keyword>"],
+  "formatting_issues": ["<issue>"],
+  "recommended_job_titles": ["<title>"],
+  "experience_level": "<Junior|Mid|Senior|Executive>"
+}
+Ensure strengths has min 3 items, weaknesses has min 3 items, missing_keywords has min 5 items, recommended_job_titles has 3-5 items.
+
+CV TEXT:
+${state.cvText.substring(0, 6000)}`;
+
+  try {
+    const result = await callOpenAI(prompt, 1800);
+    let json = result.trim();
+    // Strip markdown code blocks if present
+    json = json.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+    state.analysis = JSON.parse(json);
+    if (state.analysis.ats_score !== undefined) {
+      $('nav-score-badge').textContent = state.analysis.ats_score;
+      $('nav-score-badge').style.display = 'inline-flex';
+    }
+    renderAnalysisSection();
+    // Auto-fill job search
+    if (state.analysis.recommended_job_titles?.length) {
+      state.jobSearchQuery = state.analysis.recommended_job_titles[0];
+    }
+  } catch (err) {
+    renderAnalysisError(err.message);
+  }
+}
+
+async function callOpenAI(prompt, maxTokens = 1000) {
+  const body = {
+    model: state.model,
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3
+  };
+  // o-series models don't support temperature
+  if (state.model.startsWith('o')) delete body.temperature;
+  else body.max_tokens = maxTokens;
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.apiKey}`
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    const msg = errData.error?.message || res.statusText;
+    if (res.status === 401) throw new Error('Invalid API key. Please check your OpenAI key in Settings.');
+    if (res.status === 429) throw new Error('Rate limit reached. Please wait a moment and try again.');
+    if (res.status === 402) throw new Error('Insufficient credits. Please check your OpenAI account.');
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// ─── RENDER: ANALYSIS ─────────────────────────────────────────────
+function renderAnalysisSection() {
+  const el = $('analysis-content');
+  if (!state.cvText) {
+    el.innerHTML = emptyState('upload', 'No CV Uploaded', 'Upload your CV first to run the ATS analysis.', 'Upload CV', 'upload');
+    return;
+  }
+  if (!state.apiKey) {
+    el.innerHTML = `<div class="status-card status-warning"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div class="status-card-content"><div class="status-card-title">API Key Required</div><div class="status-card-msg">Add your OpenAI API key to run the ATS analysis. <button class="btn btn-sm" onclick="openApiModal()" style="margin-left:8px;background:var(--amber);color:#fff;border:none;">Add API Key</button></div></div></div>`;
+    return;
+  }
+  if (!state.analysis) {
+    // Show skeleton loaders
+    el.innerHTML = `
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <strong>Analyzing your CV...</strong>
+        <p>GPT-4o is reviewing your resume for ATS compatibility, keywords, and improvements.</p>
+      </div>
+    `;
+    return;
+  }
+  const a = state.analysis;
+  const scoreColor = a.ats_score >= 71 ? '#10b981' : a.ats_score >= 41 ? '#f59e0b' : '#ef4444';
+  const scoreLabel = a.ats_score >= 71 ? 'Great' : a.ats_score >= 41 ? 'Average' : 'Low';
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference - (a.ats_score / 100) * circumference;
+
+  const strengthsHtml = (a.strengths || []).map(s => `
+    <div class="strength-card">
+      <div class="strength-card-header">
+        <div class="strength-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="strength-title">${escHtml(s.title)}</div>
+      </div>
+      <div class="strength-desc">${escHtml(s.description)}</div>
+    </div>`).join('');
+
+  const weaknessesHtml = (a.weaknesses || []).map((w,i) => `
+    <div class="weakness-card">
+      <div class="weakness-header">
+        <div class="weakness-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg></div>
+        <div class="weakness-info">
+          <div class="weakness-title">${escHtml(w.title)}</div>
+          <div class="weakness-desc">${escHtml(w.description)}</div>
+        </div>
+      </div>
+      <div class="weakness-accordion">
+        <button class="accordion-toggle" id="acc-toggle-${i}" onclick="toggleAccordion(${i})" aria-expanded="false" aria-controls="acc-content-${i}">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          How to fix this
+        </button>
+        <div class="accordion-content" id="acc-content-${i}" role="region">${escHtml(w.fix)}</div>
+      </div>
+    </div>`).join('');
+
+  const keywordsHtml = (a.missing_keywords || []).map(k =>
+    `<span class="pill">${escHtml(k)}</span>`).join('');
+  const formattingHtml = (a.formatting_issues || []).map(f =>
+    `<span class="pill pill-red">${escHtml(f)}</span>`).join('');
+  const jobTitlesHtml = (a.recommended_job_titles || []).map(t =>
+    `<button class="job-title-pill" onclick="prefillJobSearch('${escHtml(t)}')" title="Search jobs for ${escHtml(t)}">${escHtml(t)}</button>`).join('');
+
+  el.innerHTML = `
+    <div class="score-ring-wrap">
+      <div class="score-ring-container" role="img" aria-label="ATS Score: ${a.ats_score} out of 100">
+        <svg viewBox="0 0 120 120">
+          <circle class="score-ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="score-ring-fill" id="score-ring" cx="60" cy="60" r="54"
+            stroke="${scoreColor}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${circumference}"/>
+        </svg>
+        <div class="score-ring-text">
+          <span class="score-number" id="score-display" style="color:${scoreColor}">0</span>
+          <span class="score-label">/ 100</span>
+        </div>
+      </div>
+      <div class="score-summary">
+        <h2>ATS Score: <span style="color:${scoreColor}">${a.ats_score} — ${scoreLabel}</span></h2>
+        <p>${escHtml(a.summary)}</p>
+        <span class="exp-badge">${escHtml(a.experience_level || 'Professional')}</span>
+        <div style="margin-top:var(--space-5);display:flex;gap:var(--space-3);flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="navigateTo('improve')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Improve My CV
+          </button>
+          <button class="btn btn-secondary" onclick="runAnalysis()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.73-7.36"/></svg>
+            Re-analyze
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Strengths</div>
+    <div class="analysis-grid" style="margin-bottom:var(--space-6);">${strengthsHtml}</div>
+
+    <div class="section-label">Weaknesses & Fixes</div>
+    <div class="analysis-grid" style="margin-bottom:var(--space-6);">${weaknessesHtml}</div>
+
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div class="card-title">Missing ATS Keywords</div>
+      <div class="pill-list">${keywordsHtml || '<span style="color:var(--text-muted);font-size:var(--text-sm);">No major keywords missing — great!</span>'}</div>
+    </div>
+
+    ${formattingHtml ? `<div class="card" style="margin-bottom:var(--space-4);"><div class="card-title">Formatting Issues</div><div class="pill-list">${formattingHtml}</div></div>` : ''}
+
+    <div class="card">
+      <div class="card-title">Recommended Job Titles</div>
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-3);">Click to search jobs for that title</p>
+      <div class="pill-list">${jobTitlesHtml}</div>
+    </div>
+  `;
+
+  // Animate score ring
+  setTimeout(() => {
+    const ring = $('score-ring');
+    const display = $('score-display');
+    if (!ring || !display) return;
+    ring.style.strokeDashoffset = offset;
+    let current = 0;
+    const target = a.ats_score;
+    const duration = 1200;
+    const step = target / (duration / 16);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      display.textContent = Math.round(current);
+      if (current >= target) clearInterval(timer);
+    }, 16);
+  }, 100);
+}
+
+function toggleAccordion(i) {
+  const toggle = $(`acc-toggle-${i}`);
+  const content = $(`acc-content-${i}`);
+  const isOpen = content.classList.contains('open');
+  content.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+  toggle.setAttribute('aria-expanded', String(!isOpen));
+}
+
+function renderAnalysisError(msg) {
+  $('analysis-content').innerHTML = `
+    <div class="status-card status-error">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <div class="status-card-content">
+        <div class="status-card-title">Analysis Failed</div>
+        <div class="status-card-msg">${escHtml(msg)}</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="runAnalysis()" style="margin-top:var(--space-4);">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.73-7.36"/></svg>
+      Retry Analysis
+    </button>`;
+}
+
+// ─── AI: IMPROVE ──────────────────────────────────────────────────
+async function runImprove() {
+  state.improvedCv = '';
+  renderImproveSection();
+  const analysisStr = state.analysis ? JSON.stringify(state.analysis) : '';
+  const prompt = `You are an expert CV writer and ATS optimization specialist. Using the original CV text and ATS analysis provided, rewrite and significantly improve the CV to:
+- Achieve a 90+ ATS score
+- Naturally incorporate all missing keywords: ${(state.analysis?.missing_keywords || []).join(', ')}
+- Use powerful action verbs (Led, Developed, Architected, Optimized, Implemented, Deployed, Automated, Streamlined, Delivered, Managed, etc.)
+- Quantify achievements with specific metrics wherever possible (e.g., "Reduced load time by 40%", "Managed team of 8")
+- Follow Harvard CV format with clear sections: Contact Info, Professional Summary, Work Experience, Skills, Education, Certifications
+- Fix formatting issues: ${(state.analysis?.formatting_issues || []).join(', ')}
+- Keep language professional, concise, and impactful
+
+Return ONLY the improved CV as clean plain text with clear section headers (no markdown, no JSON). Use ALL CAPS for section headers.
+
+ORIGINAL CV:
+${state.cvText.substring(0, 4000)}
+
+ATS ANALYSIS SUMMARY:
+${analysisStr.substring(0, 1000)}`;
+
+  try {
+    const result = await callOpenAI(prompt, 2000);
+    state.improvedCv = result.trim();
+    renderImproveSection();
+  } catch (err) {
+    $('improve-content').innerHTML = `
+      <div class="status-card status-error">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div class="status-card-content">
+          <div class="status-card-title">Improvement Failed</div>
+          <div class="status-card-msg">${escHtml(err.message)}</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="runImprove()" style="margin-top:var(--space-4);">Retry</button>`;
+  }
+}
+
+function renderImproveSection() {
+  const el = $('improve-content');
+  if (!state.cvText) {
+    el.innerHTML = emptyState('upload', 'No CV Uploaded', 'Upload your CV first, then run the ATS analysis to generate an improved version.', 'Upload CV', 'upload');
+    return;
+  }
+  if (!state.apiKey) {
+    el.innerHTML = `<div class="status-card status-warning"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div class="status-card-content"><div class="status-card-title">API Key Required</div><div class="status-card-msg"><button class="btn btn-sm" onclick="openApiModal()" style="background:var(--amber);color:#fff;border:none;">Add API Key</button></div></div></div>`;
+    return;
+  }
+  if (!state.analysis && !state.improvedCv) {
+    el.innerHTML = emptyState('analysis', 'Analysis Required', 'Run the ATS analysis first to generate your improved CV.', 'Run Analysis', 'analysis');
+    return;
+  }
+  if (!state.improvedCv) {
+    el.innerHTML = `
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <strong>Rewriting your CV...</strong>
+        <p>AI is crafting an ATS-optimized version with stronger language and missing keywords.</p>
+      </div>`;
+    if (state.analysis) runImprove();
+    return;
+  }
+
+  const origWords = state.cvText.trim().split(/\s+/).filter(Boolean).length;
+  const impWords = state.improvedCv.trim().split(/\s+/).filter(Boolean).length;
+  const origKeywords = (state.analysis?.missing_keywords || []).filter(k => state.cvText.toLowerCase().includes(k.toLowerCase())).length;
+  const impKeywords = (state.analysis?.missing_keywords || []).filter(k => state.improvedCv.toLowerCase().includes(k.toLowerCase())).length;
+
+  el.innerHTML = `
+    <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-5);flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="useImprovedCv()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Use This CV
+      </button>
+      <button class="btn btn-secondary" onclick="runImprove()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.73-7.36"/></svg>
+        Regenerate
+      </button>
+    </div>
+    <div class="split-view">
+      <div class="split-panel">
+        <div class="split-panel-header">
+          <span class="split-panel-label">Original CV</span>
+          <span class="split-panel-meta">${origWords} words · ${origKeywords} keywords</span>
+        </div>
+        <textarea class="split-textarea" readonly aria-label="Original CV text">${escHtml(state.cvText)}</textarea>
+      </div>
+      <div class="split-panel">
+        <div class="split-panel-header">
+          <span class="split-panel-label" style="color:var(--accent);">✦ Improved CV</span>
+          <span class="split-panel-meta">${impWords} words · ${impKeywords} keywords added</span>
+        </div>
+        <textarea class="split-textarea" id="improved-cv-textarea" aria-label="Improved CV text (editable)">${escHtml(state.improvedCv)}</textarea>
+      </div>
+    </div>
+    <div class="status-card status-success" style="margin-top:0;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <div class="status-card-content">
+        <div class="status-card-title">Improved CV Ready</div>
+        <div class="status-card-msg">${impKeywords} missing keywords incorporated · ${impWords > origWords ? '+' : ''}${impWords - origWords} words · Edit the improved CV above before downloading.</div>
+      </div>
+    </div>`;
+
+  // Sync edits to state
+  setTimeout(() => {
+    const ta = $('improved-cv-textarea');
+    if (ta) ta.addEventListener('input', () => { state.improvedCv = ta.value; });
+  }, 50);
+}
+
+function useImprovedCv() {
+  const ta = $('improved-cv-textarea');
+  if (ta) state.improvedCv = ta.value;
+  navigateTo('download');
+}
+
+// ─── JOBS SECTION ─────────────────────────────────────────────────
+function renderJobsSection() {
+  const el = $('jobs-content');
+  const prefilled = state.jobSearchQuery || (state.analysis?.recommended_job_titles?.[0] || '');
+  el.innerHTML = `
+    <div class="search-bar">
+      <div class="search-input-wrap" style="flex:2;min-width:200px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="job-search-input" class="form-input" placeholder="Job title or keywords..." value="${escHtml(prefilled)}" aria-label="Job search keywords" />
+      </div>
+      <div class="search-input-wrap" style="flex:1;min-width:140px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <input id="job-location-input" class="form-input" placeholder="Location or Remote" value="${escHtml(state.jobLocation)}" aria-label="Job location" />
+      </div>
+      <button class="btn btn-primary" onclick="searchJobs()" id="search-jobs-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search Jobs
+      </button>
+    </div>
+    <div class="platform-filters" role="group" aria-label="Job platform filter">
+      <button class="filter-btn ${state.jobPlatform==='linkedin'?'active':''}" onclick="setJobPlatform('linkedin')" aria-pressed="${state.jobPlatform==='linkedin'}">LinkedIn</button>
+      <button class="filter-btn ${state.jobPlatform==='indeed'?'active':''}" onclick="setJobPlatform('indeed')" aria-pressed="${state.jobPlatform==='indeed'}">Indeed</button>
+      <button class="filter-btn ${state.jobPlatform==='both'?'active':''}" onclick="setJobPlatform('both')" aria-pressed="${state.jobPlatform==='both'}">Both</button>
+    </div>
+    <div id="jobs-results"></div>
+  `;
+  if (state.jobResults.length) renderJobResults();
+  else if (prefilled) searchJobs();
+}
+
+function setJobPlatform(p) {
+  state.jobPlatform = p;
+  $$('.filter-btn').forEach(b => {
+    const active = b.textContent.toLowerCase().replace(' ','') === p || (p==='both' && b.textContent === 'Both');
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function prefillJobSearch(title) {
+  state.jobSearchQuery = title;
+  navigateTo('jobs');
+}
+
+async function searchJobs() {
+  const q = $('job-search-input')?.value?.trim();
+  const loc = $('job-location-input')?.value?.trim();
+  if (!q) { showToast('Enter a job title to search', 'warning'); return; }
+  state.jobSearchQuery = q;
+  state.jobLocation = loc || 'Remote';
+  state.jobPage = 1;
+
+  const resultsEl = $('jobs-results');
+  if (!resultsEl) return;
+  resultsEl.innerHTML = `<div class="loading-card"><div class="spinner"></div><strong>Searching jobs...</strong><p>Finding relevant ${escHtml(q)} positions...</p></div>`;
+  $('search-jobs-btn').disabled = true;
+
+  try {
+    if (state.rapidApiKey) {
+      await fetchLiveJobs(q, loc);
+    } else {
+      state.jobResults = generateMockJobs(q, loc);
+    }
+    renderJobResults();
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="status-card status-error"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><div class="status-card-content"><div class="status-card-title">Search Failed</div><div class="status-card-msg">${escHtml(err.message)} — Falling back to demo data.</div></div></div>`;
+    state.jobResults = generateMockJobs(q, loc);
+    renderJobResults();
+  } finally {
+    const btn = $('search-jobs-btn');
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function fetchLiveJobs(query, location) {
+  const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query + ' ' + location)}&page=1&num_pages=2&date_posted=month`;
+  const res = await fetch(url, {
+    headers: {
+      'X-RapidAPI-Key': state.rapidApiKey,
+      'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+    }
+  });
+  if (!res.ok) throw new Error(`JSearch API error: ${res.statusText}`);
+  const data = await res.json();
+  const cvKeywords = extractKeywords(state.cvText + ' ' + (state.improvedCv || ''));
+  state.jobResults = (data.data || []).map(j => ({
+    id: j.job_id || Math.random().toString(36).slice(2),
+    title: j.job_title,
+    company: j.employer_name,
+    location: j.job_city ? `${j.job_city}, ${j.job_country}` : (j.job_is_remote ? 'Remote' : location),
+    salary: j.job_salary_currency ? `${j.job_salary_currency}${j.job_min_salary||'?'}–${j.job_max_salary||'?'}` : 'Not specified',
+    posted: j.job_posted_at_datetime_utc ? timeAgo(new Date(j.job_posted_at_datetime_utc)) : 'Recently',
+    platform: j.job_publisher || 'LinkedIn',
+    url: j.job_apply_link || j.job_google_link || '#',
+    logo: j.employer_name?.charAt(0).toUpperCase() || '?',
+    description: j.job_description || '',
+    match: calcMatch(j.job_description + ' ' + j.job_title, cvKeywords)
+  }));
+}
+
+function generateMockJobs(query, location) {
+  const cvKeywords = extractKeywords(state.cvText + ' ' + (state.improvedCv || ''));
+  const companies = [
+    { name: 'Infosys', logo: 'I' }, { name: 'TCS', logo: 'T' },
+    { name: 'Wipro', logo: 'W' }, { name: 'HCL Technologies', logo: 'H' },
+    { name: 'Cognizant', logo: 'C' }, { name: 'Accenture', logo: 'A' },
+    { name: 'Capgemini', logo: 'C' }, { name: 'Tech Mahindra', logo: 'T' },
+    { name: 'IBM India', logo: 'I' }, { name: 'Persistent Systems', logo: 'P' },
+    { name: 'Mphasis', logo: 'M' }, { name: 'Mindtree', logo: 'M' },
+    { name: 'Hexaware', logo: 'H' }, { name: 'L&T Infotech', logo: 'L' },
+    { name: 'Zensar Technologies', logo: 'Z' }
+  ];
+  const salaries = ['₹8–12 LPA', '₹12–18 LPA', '₹18–28 LPA', '₹25–40 LPA', '₹40–60 LPA', 'Not disclosed'];
+  const platforms = ['LinkedIn', 'Indeed', 'Naukri'];
+  const times = ['2 hours ago', '1 day ago', '3 days ago', '1 week ago', '2 weeks ago'];
+  const locs = location && location.toLowerCase() !== 'remote' ? [location, location + ' / Remote'] : ['Remote', 'Bangalore', 'Hyderabad', 'Noida', 'Pune', 'Mumbai'];
+  
+  const descs = [
+    `We are looking for an experienced ${query} with strong skills in automation, API integration, and CRM systems. Experience with Zoho, HubSpot, and workflow tools preferred. Strong communication and documentation skills required.`,
+    `${query} role at a fast-growing tech company. Must have hands-on experience with n8n, Zapier, REST APIs, and technical documentation. Excellent problem-solving and analytical skills.`,
+    `Senior ${query} needed. Expert in test automation frameworks, API testing with Postman/cURL, and CI/CD pipelines. Knowledge of Python or JavaScript automation is a plus.`,
+    `${query} with CRM expertise. Must know Zoho CRM or Salesforce. Experience mapping business processes, writing technical specs, and training teams.`,
+    `Automation specialist for digital transformation. Experience with RPA tools, process optimization, and API integrations. Good communication skills for stakeholder management.`
+  ];
+
+  return Array.from({ length: 15 }, (_, i) => {
+    const co = companies[i % companies.length];
+    const desc = descs[i % descs.length];
+    return {
+      id: `mock-${i}`,
+      title: `${i < 5 ? '' : ['Senior ', 'Lead ', 'Principal ', '', 'Associate '][i % 5]}${query}`,
+      company: co.name,
+      location: locs[i % locs.length],
+      salary: salaries[i % salaries.length],
+      posted: times[i % times.length],
+      platform: platforms[i % platforms.length],
+      url: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}`,
+      logo: co.logo,
+      description: desc,
+      match: calcMatch(desc + ' ' + query, cvKeywords)
+    };
+  });
+}
+
+function renderJobResults() {
+  const el = $('jobs-results');
+  if (!el) return;
+  const filtered = state.jobResults.filter(j => {
+    if (state.jobPlatform === 'linkedin') return j.platform.toLowerCase().includes('linkedin');
+    if (state.jobPlatform === 'indeed') return j.platform.toLowerCase().includes('indeed');
+    return true;
+  });
+  if (!filtered.length) {
+    el.innerHTML = emptyState('jobs', 'No Jobs Found', 'Try adjusting your search keywords or location.', null, null);
+    return;
+  }
+  const perPage = 10;
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const start = (state.jobPage - 1) * perPage;
+  const page = filtered.slice(start, start + perPage);
+
+  const cardsHtml = page.map(j => {
+    const matchColor = j.match >= 70 ? '' : j.match >= 45 ? 'mid' : 'low';
+    return `
+      <div class="job-card" aria-label="${escHtml(j.title)} at ${escHtml(j.company)}">
+        <div class="job-card-header">
+          <div class="job-logo" aria-hidden="true">${escHtml(j.logo)}</div>
+          <div class="job-info">
+            <div class="job-title">${escHtml(j.title)}</div>
+            <div class="job-company">${escHtml(j.company)}</div>
+          </div>
+          <span class="match-badge ${matchColor}" title="CV match score">${j.match}% match</span>
+        </div>
+        <div class="job-meta">
+          <span class="job-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${escHtml(j.location)}
+          </span>
+          <span class="job-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            ${escHtml(j.salary)}
+          </span>
+          <span class="job-meta-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${escHtml(j.posted)}
+          </span>
+          <span class="job-meta-item" style="color:var(--accent)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            ${escHtml(j.platform)}
+          </span>
+        </div>
+        <div class="job-actions">
+          <a href="${escHtml(j.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View Job
+          </a>
+          <button class="btn btn-primary btn-sm" onclick='openApplyModal(${JSON.stringify(j).replace(/'/g,"&#39;")})'>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Apply with CV
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const paginationHtml = totalPages > 1 ? `
+    <nav class="pagination" aria-label="Job results pages">
+      <button class="page-btn" onclick="jobPage(${state.jobPage-1})" ${state.jobPage<=1?'disabled':''} aria-label="Previous page">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      ${Array.from({length: Math.min(totalPages,5)}, (_,i) => {
+        const p = i+1;
+        return `<button class="page-btn ${p===state.jobPage?'active':''}" onclick="jobPage(${p})" aria-label="Page ${p}" aria-current="${p===state.jobPage?'page':'false'}">${p}</button>`;
+      }).join('')}
+      <button class="page-btn" onclick="jobPage(${state.jobPage+1})" ${state.jobPage>=totalPages?'disabled':''} aria-label="Next page">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </nav>` : '';
+
+  const isDemo = !state.rapidApiKey;
+  el.innerHTML = `
+    ${isDemo ? `<div class="status-card status-info" style="margin-bottom:var(--space-4);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div class="status-card-content"><div class="status-card-title">Demo Mode</div><div class="status-card-msg">Showing representative job data. Add a <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">RapidAPI key</a> in Settings for live LinkedIn/Indeed results.</div></div></div>` : ''}
+    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-4);">${filtered.length} jobs found for "${escHtml(state.jobSearchQuery)}" · ${state.jobLocation}</p>
+    ${cardsHtml}
+    ${paginationHtml}`;
+}
+
+function jobPage(p) {
+  const filtered = state.jobResults;
+  const total = Math.ceil(filtered.length / 10);
+  if (p < 1 || p > total) return;
+  state.jobPage = p;
+  renderJobResults();
+  $('jobs-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function openApplyModal(job) {
+  state.currentApplyJob = job;
+  $('apply-modal-job-btn').href = job.url || '#';
+  $('apply-modal').classList.add('open');
+}
+$('apply-modal-close').addEventListener('click', () => $('apply-modal').classList.remove('open'));
+$('apply-modal').addEventListener('keydown', e => { if (e.key === 'Escape') $('apply-modal').classList.remove('open'); });
+$('apply-to-download-btn').addEventListener('click', () => {
+  $('apply-modal').classList.remove('open');
+  navigateTo('download');
+});
+
+// ─── DOWNLOAD SECTION ─────────────────────────────────────────────
+function renderDownloadSection() {
+  const el = $('download-content');
+  const cvToShow = state.improvedCv || state.cvText;
+  if (!cvToShow) {
+    el.innerHTML = emptyState('upload', 'No CV Available', 'Upload and analyze your CV, then generate an improved version to download.', 'Upload CV', 'upload');
+    return;
+  }
+  const score = state.analysis?.ats_score ?? null;
+  const tpl = state.selectedTemplate;
+
+  el.innerHTML = `
+    ${score !== null ? `
+      <div class="status-card status-success" style="margin-bottom:var(--space-6);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div class="status-card-content">
+          <div class="status-card-title">Final ATS Score: ${score}/100</div>
+          <div class="status-card-msg">Your ${state.improvedCv ? 'improved' : 'original'} CV is ready to download.</div>
+        </div>
+      </div>` : ''}
+
+    <div class="section-label">Choose Template</div>
+    <div class="template-selector" role="radiogroup" aria-label="CV template">
+      <div class="template-card ${tpl==='classic'?'active':''}" onclick="selectTemplate('classic')" role="radio" aria-checked="${tpl==='classic'}" tabindex="0">
+        <div class="template-thumb" style="background:linear-gradient(135deg,#e8f5f3 0%,#d1ece8 100%);">📄</div>
+        <div class="template-name">Classic</div>
+      </div>
+      <div class="template-card ${tpl==='modern'?'active':''}" onclick="selectTemplate('modern')" role="radio" aria-checked="${tpl==='modern'}" tabindex="0">
+        <div class="template-thumb" style="background:linear-gradient(135deg,#e8eeff 0%,#d1d9ff 100%);">🎨</div>
+        <div class="template-name">Modern</div>
+      </div>
+      <div class="template-card ${tpl==='minimal'?'active':''}" onclick="selectTemplate('minimal')" role="radio" aria-checked="${tpl==='minimal'}" tabindex="0">
+        <div class="template-thumb" style="background:linear-gradient(135deg,#f5f5f5 0%,#e8e8e8 100%);">✦</div>
+        <div class="template-name">Minimal</div>
+      </div>
+    </div>
+
+    <div class="section-label">Preview</div>
+    <div class="cv-preview ${tpl}" id="cv-preview-area">
+      ${formatCvPreview(cvToShow, tpl)}
+    </div>
+
+    <div class="section-label">Download</div>
+    <div class="download-actions">
+      <button class="btn btn-primary btn-lg" onclick="downloadPdf()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download as PDF
+      </button>
+      <button class="btn btn-secondary" onclick="downloadTxt()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Download as TXT
+      </button>
+      <button class="btn btn-ghost" onclick="copyToClipboard()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy to Clipboard
+      </button>
+    </div>
+
+    <div class="section-footer">
+      <p>CareerReady AI — All processing runs in your browser. Your data never leaves your device.</p>
+      <a href="mailto:?subject=CV%20Feedback&body=I%20used%20CareerReady%20AI%20to%20optimize%20my%20CV." style="font-size:var(--text-xs);color:var(--text-muted);">Share Feedback</a>
+    </div>`;
+}
+
+function selectTemplate(tpl) {
+  state.selectedTemplate = tpl;
+  renderDownloadSection();
+}
+
+function formatCvPreview(text, tpl) {
+  if (!text) return '<p style="color:#9ca3af;">No content</p>';
+  const lines = text.split('\n').filter(l => l.trim());
+  let html = '';
+  lines.forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    // Detect section headers (ALL CAPS, short lines)
+    if (t === t.toUpperCase() && t.length > 2 && t.length < 50 && /[A-Z]/.test(t)) {
+      html += `<h2>${escHtml(t)}</h2>`;
+    } else if (html === '') {
+      // First line = name
+      html += `<h1>${escHtml(t)}</h1>`;
+    } else if (t.startsWith('•') || t.startsWith('-') || t.startsWith('*')) {
+      html += `<ul><li>${escHtml(t.replace(/^[•\-\*]\s*/, ''))}</li></ul>`;
+    } else {
+      html += `<p>${escHtml(t)}</p>`;
+    }
+  });
+  return html || `<p>${escHtml(text.substring(0, 2000))}</p>`;
+}
+
+function downloadPdf() {
+  const { jsPDF } = window.jspdf;
+  const cvText = state.improvedCv || state.cvText;
+  if (!cvText) { showToast('No CV to download', 'error'); return; }
+  try {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const tpl = state.selectedTemplate;
+    const accentRgb = tpl === 'modern' ? [59, 130, 246] : tpl === 'minimal' ? [26,26,26] : [0, 201, 167];
+    const margin = 20;
+    const pageW = 210;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    doc.setFont('helvetica');
+    const lines = cvText.split('\n').filter(l => l.trim());
+    let firstLine = true;
+
+    lines.forEach(line => {
+      const t = line.trim();
+      if (!t) { y += 4; return; }
+      if (y > 270) { doc.addPage(); y = margin; }
+      const isHeader = t === t.toUpperCase() && t.length > 2 && t.length < 50 && /[A-Z]/.test(t);
+      if (firstLine) {
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(13, 17, 23);
+        const nameLines = doc.splitTextToSize(t, contentW);
+        doc.text(nameLines, margin, y);
+        y += nameLines.length * 8 + 4;
+        firstLine = false;
+      } else if (isHeader) {
+        if (y > margin + 10) y += 2;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...accentRgb);
+        doc.text(t, margin, y);
+        y += 1;
+        doc.setDrawColor(...accentRgb);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y + 1, margin + contentW, y + 1);
+        y += 6;
+        doc.setTextColor(55, 65, 81);
+      } else {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(55, 65, 81);
+        const wrapped = doc.splitTextToSize(t, contentW);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 1;
+      }
+    });
+
+    // Footer
+    doc.setFontSize(7);
+    doc.setTextColor(180, 180, 180);
+    doc.text('Generated by CareerReady AI', margin, 290);
+    doc.save(`CV_Optimized_${state.selectedTemplate}.pdf`);
+    showToast('PDF downloaded successfully', 'success');
+  } catch (err) {
+    showToast('PDF generation failed: ' + err.message, 'error');
+  }
+}
+
+function downloadTxt() {
+  const text = state.improvedCv || state.cvText;
+  if (!text) { showToast('No CV to download', 'error'); return; }
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CV_Optimized.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('TXT file downloaded', 'success');
+}
+
+function copyToClipboard() {
+  const text = state.improvedCv || state.cvText;
+  if (!text) { showToast('No CV to copy', 'error'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('CV copied to clipboard', 'success');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('CV copied to clipboard', 'success');
+  });
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────
+function escHtml(str) {
+  if (typeof str !== 'string') return String(str || '');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function emptyState(icon, title, desc, btnText, btnSection) {
+  const icons = {
+    upload: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    analysis: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    jobs: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`
+  };
+  return `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true">${icons[icon]||icons.upload}</div><h2>${escHtml(title)}</h2><p>${escHtml(desc)}</p>${btnText ? `<button class="btn btn-primary" onclick="navigateTo('${btnSection}')">${escHtml(btnText)}</button>` : ''}</div>`;
+}
+
+function extractKeywords(text) {
+  if (!text) return [];
+  const stopwords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','can','this','that','these','those','i','you','he','she','we','they','it','my','your','his','her','our','their']);
+  return text.toLowerCase().match(/\b[a-z][a-z\+\#\.]{2,}\b/g)?.filter(w => !stopwords.has(w)) || [];
+}
+
+function calcMatch(jobText, cvKeywords) {
+  if (!cvKeywords.length || !jobText) return Math.floor(Math.random() * 40 + 40);
+  const jobWords = new Set(extractKeywords(jobText));
+  const matches = cvKeywords.filter(k => jobWords.has(k)).length;
+  const score = Math.min(100, Math.round((matches / Math.max(cvKeywords.length, 1)) * 200));
+  return Math.max(30, Math.min(95, score));
+}
+
+function timeAgo(date) {
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 3600) return `${Math.floor(diff/60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+function init() {
+  // Handle initial hash
+  const hash = window.location.hash.replace('#','');
+  if (['upload','analysis','improve','jobs','download'].includes(hash)) {
+    state.currentSection = hash;
+    navigateTo(hash);
+  }
+  // Template card keyboard nav
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      $('apply-modal').classList.remove('open');
+    }
+    if (e.key === 'Enter' && document.activeElement?.classList.contains('template-card')) {
+      document.activeElement.click();
+    }
+  });
+  // Keyboard nav for template cards
+  document.querySelectorAll('.template-card').forEach(card => {
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>
