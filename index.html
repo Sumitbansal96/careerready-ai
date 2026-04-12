@@ -1093,7 +1093,7 @@
       </svg>
     </div>
     <h2 class="modal-title" id="api-modal-title">Welcome to CareerReady AI</h2>
-    <p class="modal-desc">Enter your OpenAI API key to get started. Your key is stored only in memory and never leaves your browser.</p>
+    <p class="modal-desc">Use your own OpenAI API key for AI features. This frontend-only app sends requests directly from your browser to OpenAI and does not persist the key after refresh.</p>
     <div class="form-group">
       <label class="form-label" for="api-key-input">OpenAI API Key</label>
       <div class="input-wrap">
@@ -1120,7 +1120,7 @@
     <div class="form-group">
       <label class="form-label" for="rapidapi-key-input">RapidAPI Key <span style="color:var(--text-muted);font-weight:400;">(optional — for live job search)</span></label>
       <input id="rapidapi-key-input" type="password" class="form-input" placeholder="Leave blank to use demo job data" autocomplete="off" />
-      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;">Get a free key at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener noreferrer">RapidAPI JSearch</a> for live LinkedIn/Indeed results.</p>
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;">Get a free key at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener noreferrer">RapidAPI JSearch</a> for live LinkedIn/Indeed results. Without it, CareerReady will show dynamic search leads that open real searches on job platforms.</p>
     </div>
 
     <div style="display:flex;gap:var(--space-3);margin-top:var(--space-2);">
@@ -1133,7 +1133,7 @@
 
     <div class="trust-note">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Your API key never leaves your browser — stored in memory only
+      Frontend-only apps cannot securely hide a shared OpenAI key. Use a backend proxy if you want limited shared trials.
     </div>
   </div>
 </div>
@@ -1898,6 +1898,9 @@ async function runImprove() {
   state.improvedCv = '';
   renderImproveSection();
   const analysisStr = state.analysis ? JSON.stringify(state.analysis) : '';
+  const originalExperience = extractSectionBlock(state.cvText, EXPERIENCE_SECTION_HEADERS);
+  const originalEducation = extractSectionBlock(state.cvText, EDUCATION_SECTION_HEADERS);
+  const originalCertifications = extractSectionBlock(state.cvText, CERTIFICATION_SECTION_HEADERS);
   const prompt = `You are an expert CV writer and ATS optimization specialist. Using the original CV text and ATS analysis provided, rewrite and significantly improve the CV to:
 - Achieve a 90+ ATS score
 - Naturally incorporate all missing keywords: ${(state.analysis?.missing_keywords || []).join(', ')}
@@ -1906,6 +1909,12 @@ async function runImprove() {
 - Follow Harvard CV format with clear sections: Contact Info, Professional Summary, Work Experience, Skills, Education, Certifications
 - Fix formatting issues: ${(state.analysis?.formatting_issues || []).join(', ')}
 - Keep language professional, concise, and impactful
+- Preserve authenticity. Use only facts already present in the original CV.
+- Do not invent, remove, or alter employers, job titles, dates, education, certifications, institutions, locations, or years.
+- Keep every existing experience entry exactly once.
+- Copy EDUCATION and CERTIFICATIONS verbatim when they exist.
+- If EDUCATION or CERTIFICATIONS do not exist in the original CV, do not create them.
+- Keep the non-bullet heading lines in WORK EXPERIENCE exactly faithful to the original CV. You may improve bullet wording, but do not change the underlying facts.
 
 Return ONLY the improved CV as clean plain text with clear section headers (no markdown, no JSON). Use ALL CAPS for section headers.
 
@@ -1913,11 +1922,20 @@ ORIGINAL CV:
 ${state.cvText.substring(0, 4000)}
 
 ATS ANALYSIS SUMMARY:
-${analysisStr.substring(0, 1000)}`;
+${analysisStr.substring(0, 1000)}
+
+ORIGINAL EXPERIENCE BLOCK:
+${(originalExperience || 'Not present in original CV.').substring(0, 1500)}
+
+ORIGINAL EDUCATION BLOCK:
+${(originalEducation || 'Not present in original CV.').substring(0, 1000)}
+
+ORIGINAL CERTIFICATIONS BLOCK:
+${(originalCertifications || 'Not present in original CV.').substring(0, 1000)}`;
 
   try {
     const result = await callOpenAI(prompt, 2000);
-    state.improvedCv = result.trim();
+    state.improvedCv = finalizeImprovedCv(state.cvText, result.trim());
     renderImproveSection();
   } catch (err) {
     $('improve-content').innerHTML = `
@@ -2071,12 +2089,12 @@ async function searchJobs() {
     if (state.rapidApiKey) {
       await fetchLiveJobs(q, loc);
     } else {
-      state.jobResults = generateMockJobs(q, loc);
+      state.jobResults = generateCuratedJobResults(q, loc);
     }
     renderJobResults();
   } catch (err) {
-    resultsEl.innerHTML = `<div class="status-card status-error"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><div class="status-card-content"><div class="status-card-title">Search Failed</div><div class="status-card-msg">${escHtml(err.message)} — Falling back to demo data.</div></div></div>`;
-    state.jobResults = generateMockJobs(q, loc);
+    resultsEl.innerHTML = `<div class="status-card status-error"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><div class="status-card-content"><div class="status-card-title">Search Failed</div><div class="status-card-msg">${escHtml(err.message)} — Falling back to dynamic search leads.</div></div></div>`;
+    state.jobResults = generateCuratedJobResults(q, loc);
     renderJobResults();
   } finally {
     const btn = $('search-jobs-btn');
@@ -2085,83 +2103,166 @@ async function searchJobs() {
 }
 
 async function fetchLiveJobs(query, location) {
-  const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query + ' ' + location)}&page=1&num_pages=2&date_posted=month`;
-  const res = await fetch(url, {
-    headers: {
-      'X-RapidAPI-Key': state.rapidApiKey,
-      'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
-    }
+  const cvKeywords = getPrioritizedKeywords(state.cvText + ' ' + (state.improvedCv || ''));
+  const queries = buildJobSearchQueries(query, location, cvKeywords);
+  const rawJobs = [];
+
+  for (const searchQuery of queries) {
+    const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery)}&page=1&num_pages=1&date_posted=month`;
+    const res = await fetch(url, {
+      headers: {
+        'X-RapidAPI-Key': state.rapidApiKey,
+        'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+      }
+    });
+    if (!res.ok) throw new Error(`JSearch API error: ${res.statusText}`);
+    const data = await res.json();
+    rawJobs.push(...(data.data || []));
+    if (rawJobs.length >= 24) break;
+  }
+
+  state.jobResults = normalizeLiveJobs(rawJobs, location, cvKeywords);
+  if (!state.jobResults.length) {
+    state.jobResults = generateCuratedJobResults(query, location);
+  }
+}
+
+function normalizeLiveJobs(rawJobs, location, cvKeywords) {
+  const seen = new Set();
+  return rawJobs.map(j => {
+    const normalizedLocation = [j.job_city, j.job_state, j.job_country].filter(Boolean).join(', ')
+      || (j.job_is_remote ? 'Remote' : (location || 'Remote'));
+    const url = j.job_apply_link || j.job_google_link || '#';
+    return {
+      id: j.job_id || Math.random().toString(36).slice(2),
+      title: j.job_title || 'Untitled role',
+      company: j.employer_name || 'Unknown employer',
+      location: normalizedLocation,
+      salary: j.job_salary_currency && (j.job_min_salary || j.job_max_salary)
+        ? `${j.job_salary_currency}${j.job_min_salary || '?'}–${j.job_max_salary || '?'}`
+        : 'Not specified',
+      posted: j.job_posted_at_datetime_utc ? timeAgo(new Date(j.job_posted_at_datetime_utc)) : 'Recently',
+      postedAt: j.job_posted_at_datetime_utc ? new Date(j.job_posted_at_datetime_utc).getTime() : 0,
+      platform: j.job_publisher || 'Job Board',
+      url,
+      logo: (j.employer_name || 'J').charAt(0).toUpperCase(),
+      description: j.job_description || '',
+      sourceType: 'live',
+      match: calcMatch([j.job_description, j.job_title, j.employer_name].filter(Boolean).join(' '), cvKeywords)
+    };
+  }).filter(job => {
+    const key = `${job.title.toLowerCase()}|${job.company.toLowerCase()}|${job.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return job.url && job.url !== '#' && job.title && job.company;
+  }).sort((a, b) => (b.match - a.match) || (b.postedAt - a.postedAt)).slice(0, 30);
+}
+
+function buildJobSearchQueries(query, location, cvKeywords) {
+  const titles = [query, ...(state.analysis?.recommended_job_titles || [])]
+    .map(item => item && item.trim())
+    .filter(Boolean)
+    .filter((item, index, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === index)
+    .slice(0, 3);
+
+  const skillBoost = cvKeywords.slice(0, 3).join(' ');
+  const queries = titles.flatMap(title => {
+    const base = [title, location].filter(Boolean).join(' ').trim();
+    const boosted = skillBoost ? [title, skillBoost, location].filter(Boolean).join(' ').trim() : '';
+    return [base, boosted].filter(Boolean);
   });
-  if (!res.ok) throw new Error(`JSearch API error: ${res.statusText}`);
-  const data = await res.json();
-  const cvKeywords = extractKeywords(state.cvText + ' ' + (state.improvedCv || ''));
-  state.jobResults = (data.data || []).map(j => ({
-    id: j.job_id || Math.random().toString(36).slice(2),
-    title: j.job_title,
-    company: j.employer_name,
-    location: j.job_city ? `${j.job_city}, ${j.job_country}` : (j.job_is_remote ? 'Remote' : location),
-    salary: j.job_salary_currency ? `${j.job_salary_currency}${j.job_min_salary||'?'}–${j.job_max_salary||'?'}` : 'Not specified',
-    posted: j.job_posted_at_datetime_utc ? timeAgo(new Date(j.job_posted_at_datetime_utc)) : 'Recently',
-    platform: j.job_publisher || 'LinkedIn',
-    url: j.job_apply_link || j.job_google_link || '#',
-    logo: j.employer_name?.charAt(0).toUpperCase() || '?',
-    description: j.job_description || '',
-    match: calcMatch(j.job_description + ' ' + j.job_title, cvKeywords)
+
+  return queries.filter((item, index, arr) => arr.indexOf(item) === index).slice(0, 4);
+}
+
+function generateCuratedJobResults(query, location) {
+  const normalizedLocation = location || 'Remote';
+  const roleVariants = [query, ...(state.analysis?.recommended_job_titles || [])]
+    .map(item => item && item.trim())
+    .filter(Boolean)
+    .filter((item, index, arr) => arr.findIndex(other => other.toLowerCase() === item.toLowerCase()) === index)
+    .slice(0, 4);
+  const titles = roleVariants.length ? roleVariants : [query];
+  const keywords = getPrioritizedKeywords(state.cvText + ' ' + (state.improvedCv || ''));
+  const boards = [
+    {
+      name: 'LinkedIn',
+      buildUrl: (title, loc) => `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(title)}&location=${encodeURIComponent(loc || 'Remote')}`,
+      note: 'Live role search on LinkedIn'
+    },
+    {
+      name: 'Indeed',
+      buildUrl: (title, loc) => `https://www.indeed.com/jobs?q=${encodeURIComponent(title)}&l=${encodeURIComponent(loc || 'Remote')}`,
+      note: 'Live role search on Indeed'
+    },
+    {
+      name: 'Naukri',
+      buildUrl: (title, loc) => `https://www.naukri.com/${encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'))}-jobs-in-${encodeURIComponent((loc || 'remote').toLowerCase().replace(/\s+/g, '-'))}`,
+      note: 'Live role search on Naukri'
+    },
+    {
+      name: 'Glassdoor',
+      buildUrl: (title, loc) => `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${encodeURIComponent(title)}&locKeyword=${encodeURIComponent(loc || 'Remote')}`,
+      note: 'Live role search on Glassdoor'
+    }
+  ];
+
+  return titles.flatMap((title, titleIndex) => boards.map((board, boardIndex) => {
+    const start = keywords.length ? (titleIndex + boardIndex) % keywords.length : 0;
+    const focus = keywords.slice(start, start + 3);
+    const description = `${board.note} for ${title} roles in ${normalizedLocation}.${focus.length ? ` Focus terms: ${focus.join(', ')}.` : ''}`;
+    return {
+      id: `curated-${titleIndex}-${boardIndex}-${title.toLowerCase().replace(/\W+/g, '-')}`,
+      title: `${title} roles on ${board.name}`,
+      company: `${board.name} search`,
+      location: normalizedLocation,
+      salary: 'Open live search',
+      posted: 'Fresh search',
+      postedAt: Date.now() - ((titleIndex * boards.length) + boardIndex) * 1000,
+      platform: board.name,
+      url: board.buildUrl(title, normalizedLocation),
+      logo: board.name.charAt(0),
+      description,
+      sourceType: 'curated',
+      match: calcMatch(`${title} ${description}`, keywords)
+    };
   }));
 }
 
-function generateMockJobs(query, location) {
-  const cvKeywords = extractKeywords(state.cvText + ' ' + (state.improvedCv || ''));
-  const companies = [
-    { name: 'Infosys', logo: 'I' }, { name: 'TCS', logo: 'T' },
-    { name: 'Wipro', logo: 'W' }, { name: 'HCL Technologies', logo: 'H' },
-    { name: 'Cognizant', logo: 'C' }, { name: 'Accenture', logo: 'A' },
-    { name: 'Capgemini', logo: 'C' }, { name: 'Tech Mahindra', logo: 'T' },
-    { name: 'IBM India', logo: 'I' }, { name: 'Persistent Systems', logo: 'P' },
-    { name: 'Mphasis', logo: 'M' }, { name: 'Mindtree', logo: 'M' },
-    { name: 'Hexaware', logo: 'H' }, { name: 'L&T Infotech', logo: 'L' },
-    { name: 'Zensar Technologies', logo: 'Z' }
-  ];
-  const salaries = ['₹8–12 LPA', '₹12–18 LPA', '₹18–28 LPA', '₹25–40 LPA', '₹40–60 LPA', 'Not disclosed'];
-  const platforms = ['LinkedIn', 'Indeed', 'Naukri'];
-  const times = ['2 hours ago', '1 day ago', '3 days ago', '1 week ago', '2 weeks ago'];
-  const locs = location && location.toLowerCase() !== 'remote' ? [location, location + ' / Remote'] : ['Remote', 'Bangalore', 'Hyderabad', 'Noida', 'Pune', 'Mumbai'];
-  
-  const descs = [
-    `We are looking for an experienced ${query} with strong skills in automation, API integration, and CRM systems. Experience with Zoho, HubSpot, and workflow tools preferred. Strong communication and documentation skills required.`,
-    `${query} role at a fast-growing tech company. Must have hands-on experience with n8n, Zapier, REST APIs, and technical documentation. Excellent problem-solving and analytical skills.`,
-    `Senior ${query} needed. Expert in test automation frameworks, API testing with Postman/cURL, and CI/CD pipelines. Knowledge of Python or JavaScript automation is a plus.`,
-    `${query} with CRM expertise. Must know Zoho CRM or Salesforce. Experience mapping business processes, writing technical specs, and training teams.`,
-    `Automation specialist for digital transformation. Experience with RPA tools, process optimization, and API integrations. Good communication skills for stakeholder management.`
-  ];
-
-  return Array.from({ length: 15 }, (_, i) => {
-    const co = companies[i % companies.length];
-    const desc = descs[i % descs.length];
-    return {
-      id: `mock-${i}`,
-      title: `${i < 5 ? '' : ['Senior ', 'Lead ', 'Principal ', '', 'Associate '][i % 5]}${query}`,
-      company: co.name,
-      location: locs[i % locs.length],
-      salary: salaries[i % salaries.length],
-      posted: times[i % times.length],
-      platform: platforms[i % platforms.length],
-      url: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}`,
-      logo: co.logo,
-      description: desc,
-      match: calcMatch(desc + ' ' + query, cvKeywords)
-    };
+function getFilteredJobResults() {
+  return state.jobResults.filter(j => {
+    if (state.jobPlatform === 'linkedin') return j.platform.toLowerCase().includes('linkedin');
+    if (state.jobPlatform === 'indeed') return j.platform.toLowerCase().includes('indeed');
+    return true;
   });
+}
+
+function getPrioritizedKeywords(text) {
+  const counts = new Map();
+  extractKeywords(text).forEach(keyword => {
+    counts.set(keyword, (counts.get(keyword) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .filter(([keyword]) => keyword.length >= 3)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([keyword]) => keyword)
+    .slice(0, 12);
+}
+
+function stableHash(text) {
+  let hash = 0;
+  const input = String(text || '');
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
 }
 
 function renderJobResults() {
   const el = $('jobs-results');
   if (!el) return;
-  const filtered = state.jobResults.filter(j => {
-    if (state.jobPlatform === 'linkedin') return j.platform.toLowerCase().includes('linkedin');
-    if (state.jobPlatform === 'indeed') return j.platform.toLowerCase().includes('indeed');
-    return true;
-  });
+  const filtered = getFilteredJobResults();
   if (!filtered.length) {
     el.innerHTML = emptyState('jobs', 'No Jobs Found', 'Try adjusting your search keywords or location.', null, null);
     return;
@@ -2173,6 +2274,19 @@ function renderJobResults() {
 
   const cardsHtml = page.map(j => {
     const matchColor = j.match >= 70 ? '' : j.match >= 45 ? 'mid' : 'low';
+    const actionHtml = j.sourceType === 'curated'
+      ? `<a href="${escHtml(j.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open Search
+          </a>`
+      : `<a href="${escHtml(j.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View Job
+          </a>
+          <button class="btn btn-primary btn-sm" onclick='openApplyModal(${JSON.stringify(j).replace(/'/g,"&#39;")})'>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Apply with CV
+          </button>`;
     return `
       <div class="job-card" aria-label="${escHtml(j.title)} at ${escHtml(j.company)}">
         <div class="job-card-header">
@@ -2202,14 +2316,7 @@ function renderJobResults() {
           </span>
         </div>
         <div class="job-actions">
-          <a href="${escHtml(j.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            View Job
-          </a>
-          <button class="btn btn-primary btn-sm" onclick='openApplyModal(${JSON.stringify(j).replace(/'/g,"&#39;")})'>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Apply with CV
-          </button>
+          ${actionHtml}
         </div>
       </div>`;
   }).join('');
@@ -2228,16 +2335,16 @@ function renderJobResults() {
       </button>
     </nav>` : '';
 
-  const isDemo = !state.rapidApiKey;
+  const isCurated = filtered.every(j => j.sourceType === 'curated');
   el.innerHTML = `
-    ${isDemo ? `<div class="status-card status-info" style="margin-bottom:var(--space-4);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div class="status-card-content"><div class="status-card-title">Demo Mode</div><div class="status-card-msg">Showing representative job data. Add a <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">RapidAPI key</a> in Settings for live LinkedIn/Indeed results.</div></div></div>` : ''}
-    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-4);">${filtered.length} jobs found for "${escHtml(state.jobSearchQuery)}" · ${state.jobLocation}</p>
+    ${isCurated ? `<div class="status-card status-info" style="margin-bottom:var(--space-4);"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div class="status-card-content"><div class="status-card-title">Dynamic Search Leads</div><div class="status-card-msg">No job-search API key is configured, so CareerReady is generating live search links across major job boards based on your role, location, and CV keywords. Add a <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">RapidAPI key</a> in Settings for direct listing results.</div></div></div>` : ''}
+    <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-4);">${filtered.length} ${isCurated ? 'search leads' : 'jobs found'} for "${escHtml(state.jobSearchQuery)}" · ${state.jobLocation}</p>
     ${cardsHtml}
     ${paginationHtml}`;
 }
 
 function jobPage(p) {
-  const filtered = state.jobResults;
+  const filtered = getFilteredJobResults();
   const total = Math.ceil(filtered.length / 10);
   if (p < 1 || p > total) return;
   state.jobPage = p;
@@ -2464,11 +2571,153 @@ function extractKeywords(text) {
 }
 
 function calcMatch(jobText, cvKeywords) {
-  if (!cvKeywords.length || !jobText) return Math.floor(Math.random() * 40 + 40);
+  if (!cvKeywords.length || !jobText) return 45 + (stableHash(jobText || state.jobSearchQuery || 'careerready') % 35);
   const jobWords = new Set(extractKeywords(jobText));
   const matches = cvKeywords.filter(k => jobWords.has(k)).length;
   const score = Math.min(100, Math.round((matches / Math.max(cvKeywords.length, 1)) * 200));
   return Math.max(30, Math.min(95, score));
+}
+
+const EXPERIENCE_SECTION_HEADERS = ['WORK EXPERIENCE', 'PROFESSIONAL EXPERIENCE', 'EXPERIENCE', 'EMPLOYMENT HISTORY'];
+const EDUCATION_SECTION_HEADERS = ['EDUCATION', 'ACADEMIC BACKGROUND', 'ACADEMIC QUALIFICATIONS'];
+const CERTIFICATION_SECTION_HEADERS = ['CERTIFICATIONS', 'CERTIFICATION', 'LICENSES & CERTIFICATIONS', 'LICENSES AND CERTIFICATIONS', 'LICENSES'];
+const KNOWN_SECTION_HEADERS = [
+  ...EXPERIENCE_SECTION_HEADERS,
+  ...EDUCATION_SECTION_HEADERS,
+  ...CERTIFICATION_SECTION_HEADERS,
+  'SUMMARY',
+  'PROFESSIONAL SUMMARY',
+  'PROFILE',
+  'SKILLS',
+  'TECHNICAL SKILLS',
+  'PROJECTS',
+  'ACHIEVEMENTS',
+  'AWARDS',
+  'CONTACT',
+  'CONTACT INFO',
+  'INTERNSHIPS'
+];
+
+function normalizeSectionHeader(line) {
+  return String(line || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z&\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isKnownSectionHeader(line) {
+  const normalized = normalizeSectionHeader(line);
+  return KNOWN_SECTION_HEADERS.includes(normalized);
+}
+
+function extractSectionBlock(text, targetHeaders) {
+  if (!text) return '';
+  const lines = text.split('\n');
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (targetHeaders.includes(normalizeSectionHeader(lines[i]))) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) return '';
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (isKnownSectionHeader(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n').trim();
+}
+
+function replaceSectionBlock(text, targetHeaders, replacement) {
+  const lines = text.split('\n');
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (targetHeaders.includes(normalizeSectionHeader(lines[i]))) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) {
+    return `${text.trim()}\n\n${replacement.trim()}`.trim();
+  }
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (isKnownSectionHeader(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return [...lines.slice(0, start), replacement.trim(), ...lines.slice(end)].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function removeSectionBlock(text, targetHeaders) {
+  const lines = text.split('\n');
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (targetHeaders.includes(normalizeSectionHeader(lines[i]))) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) return text;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (isKnownSectionHeader(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return [...lines.slice(0, start), ...lines.slice(end)].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function normalizeCvLine(line) {
+  return String(line || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractExperienceAnchorLines(sectionText) {
+  return sectionText.split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !isKnownSectionHeader(line))
+    .filter(line => !/^[•\-\*]/.test(line))
+    .filter(line => /\d/.test(line) || /\b(at|to|from|present|current)\b/i.test(line) || line.length > 18)
+    .map(normalizeCvLine)
+    .filter(Boolean);
+}
+
+function finalizeImprovedCv(originalCv, improvedCv) {
+  let finalCv = String(improvedCv || '').trim();
+  if (!finalCv) return finalCv;
+
+  const originalEducation = extractSectionBlock(originalCv, EDUCATION_SECTION_HEADERS);
+  const originalCertifications = extractSectionBlock(originalCv, CERTIFICATION_SECTION_HEADERS);
+  const originalExperience = extractSectionBlock(originalCv, EXPERIENCE_SECTION_HEADERS);
+
+  if (originalEducation) finalCv = replaceSectionBlock(finalCv, EDUCATION_SECTION_HEADERS, originalEducation);
+  else finalCv = removeSectionBlock(finalCv, EDUCATION_SECTION_HEADERS);
+
+  if (originalCertifications) finalCv = replaceSectionBlock(finalCv, CERTIFICATION_SECTION_HEADERS, originalCertifications);
+  else finalCv = removeSectionBlock(finalCv, CERTIFICATION_SECTION_HEADERS);
+
+  if (originalExperience) {
+    const improvedExperience = extractSectionBlock(finalCv, EXPERIENCE_SECTION_HEADERS);
+    const anchors = extractExperienceAnchorLines(originalExperience);
+    const missingAnchors = anchors.filter(anchor => !normalizeCvLine(improvedExperience).includes(anchor));
+    if (missingAnchors.length) {
+      finalCv = replaceSectionBlock(finalCv, EXPERIENCE_SECTION_HEADERS, originalExperience);
+    }
+  }
+
+  return finalCv.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function timeAgo(date) {
